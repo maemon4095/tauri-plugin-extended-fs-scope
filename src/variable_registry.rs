@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
-use crate::{error::Error, SEPARATOR_PAT};
+use crate::SEPARATOR_PAT;
 
-pub trait VariableRegistry: 'static + Send {
+pub trait VariableRegistry: 'static + Send + Sync {
     fn resolve(&self, name: &str) -> Option<&str>;
+    fn variables(&self) -> Box<dyn '_ + Iterator<Item = (&str, &str)>>;
 }
 
 pub struct DefaultVariableRegistry {
@@ -46,5 +47,37 @@ impl DefaultVariableRegistry {
 impl VariableRegistry for DefaultVariableRegistry {
     fn resolve(&self, name: &str) -> Option<&str> {
         self.map.get(name).map(|e| e.as_str())
+    }
+
+    fn variables(&self) -> Box<dyn '_ + Iterator<Item = (&str, &str)>> {
+        Box::new(self.map.iter().map(|(k, v)| (k.as_str(), v.as_str())))
+    }
+}
+
+#[derive(Debug)]
+pub enum Error {
+    ConflictVariable(String),
+}
+
+impl std::error::Error for Error {}
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::ConflictVariable(name) => {
+                write!(
+                    f,
+                    "Variable registry already contains variable have the name: {}",
+                    name
+                )
+            }
+        }
+    }
+}
+impl serde::Serialize for Error {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&format!("{}", self))
     }
 }

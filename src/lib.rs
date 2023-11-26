@@ -1,14 +1,13 @@
-mod error;
-mod patterns;
+mod pattern_resolver;
 mod variable_registry;
 
-use patterns::{PatternEncoder, PatternParser};
 use tauri::{
     plugin::{Builder, TauriPlugin},
     Manager, Runtime,
 };
 
-pub use variable_registry::{DefaultVariableRegistry, VariableRegistry};
+pub use pattern_resolver::{Error as ResolveError, PatternResolver};
+pub use variable_registry::{DefaultVariableRegistry, Error as RegistryError, VariableRegistry};
 
 static SEPARATOR_PAT: &'static [char] = &['/', '\\'];
 
@@ -21,13 +20,13 @@ pub fn init_with<R: Runtime>(registry: impl VariableRegistry) -> TauriPlugin<R, 
     Builder::<R, Config>::new("extended-fs-scope")
         .setup_with_config(|app_handle, config| {
             let scope = app_handle.fs_scope();
-            let parser = PatternParser;
-            let mut encoder = PatternEncoder::new(registry);
-
+            let resolver = PatternResolver::new(Box::new(registry));
             for raw_pat in config.scope.iter() {
-                let scoped = parser.parse(raw_pat);
-                encoder.encode(&scope, scoped)?;
+                let resolved = resolver.resolve(&raw_pat)?;
+                scope.allow_file(resolved.as_str())?;
             }
+
+            app_handle.manage(resolver);
 
             Ok(())
         })

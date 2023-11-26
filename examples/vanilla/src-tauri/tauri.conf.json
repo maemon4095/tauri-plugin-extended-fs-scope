@@ -1,17 +1,24 @@
 {
   "package": {
-    "productName": "app",
+    "productName": "tauri-plugin-extended-fs-scope example",
     "version": "0.1.0"
   },
   "build": {
     "distDir": "../public",
     "devPath": "../public"
   },
+  "plugins": {
+    "extended-fs-scope": {
+      "scope": [
+        "$SELF/**"
+      ]
+    }
+  },
   "tauri": {
     "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.tauri.scope-self",
+      "identifier": "maemon4095",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
@@ -48,7 +55,7 @@
     },
     "windows": [
       {
-        "title": "app",
+        "title": "tauri-plugin-extended-fs-scope example",
         "width": 800,
         "height": 600,
         "resizable": true,
